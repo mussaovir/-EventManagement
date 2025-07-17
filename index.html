@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventFlow | Event Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(8, 8, 8, 0.1), 0 10px 10px -5px rgba(4, 4, 4, 0.04);
+        }
+
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
+
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #eventForm .form-input:focus {
+            border-color: #46b0e5;
+            box-shadow: 0 0 0 1px #1409e0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9a96260a-b125-4258-958a-d653d34d6534.png"
+                            alt="EventFlow logo with a calendar icon surrounded by curved arrows in purple and blue gradient"
+                            class="h-8 w-8">
+                        <span class="ml-2 text-xl font-bold text-gray-900">EventFlow</span>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button id="createEventBtn"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-plus mr-2"></i> Create Event
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Upcoming Events</h1>
+                <p class="mt-2 text-sm text-gray-500">Discover and join exciting events in your area</p>
+            </div>
+
+            <!-- Filter/Search Bar -->
+            <div class="mb-6 flex flex-col sm:flex-row gap-4">
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Search events..."
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <select id="categoryFilter"
+                    class="block w-full sm:w-auto pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="all">All Categories</option>
+                    <option value="business">Business</option>
+                    <option value="social">Social</option>
+                    <option value="education">Education</option>
+                    <option value="music">Music</option>
+                    <option value="sports">Sports</option>
+                </select>
+                <button id="applyFilters"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Apply Filters
+                </button>
+            </div>
+
+            <!-- Events Grid -->
+            <div id="eventsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Events will be dynamically loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Event Modal -->
+    <div id="createEventModal" class="modal fixed inset-0 overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <!-- Modal panel -->
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                Create New Event
+                            </h3>
+                            <div class="mt-2">
+                                <form id="eventForm">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label for="eventTitle"
+                                                class="block text-sm font-medium text-gray-700">Event Title</label>
+                                            <input type="text" name="eventTitle" id="eventTitle"
+                                                class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                required>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="eventDate"
+                                                    class="block text-sm font-medium text-gray-700">Date</label>
+                                                <input type="date" name="eventDate" id="eventDate"
+                                                    class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                    required>
+                                            </div>
+                                            <div>
+                                                <label for="eventTime"
+                                                    class="block text-sm font-medium text-gray-700">Time</label>
+                                                <input type="time" name="eventTime" id="eventTime"
+                                                    class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                    required>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="eventCategory"
+                                                    class="block text-sm font-medium text-gray-700">Category</label>
+                                                <select name="eventCategory" id="eventCategory"
+                                                    class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                    required>
+                                                    <option value="">Select a category</option>
+                                                    <option value="business">Business</option>
+                                                    <option value="social">Social</option>
+                                                    <option value="education">Education</option>
+                                                    <option value="music">Music</option>
+                                                    <option value="sports">Sports</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="eventCapacity"
+                                                    class="block text-sm font-medium text-gray-700">Capacity</label>
+                                                <input type="number" name="eventCapacity" id="eventCapacity" min="1"
+                                                    class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                    required>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label for="eventLocation"
+                                                class="block text-sm font-medium text-gray-700">Location</label>
+                                            <input type="text" name="eventLocation" id="eventLocation"
+                                                class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                required>
+                                        </div>
+
+                                        <div>
+                                            <label for="eventDescription"
+                                                class="block text-sm font-medium text-gray-700">Description</label>
+                                            <textarea name="eventDescription" id="eventDescription" rows="4"
+                                                class="mt-1 form-input block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Event Banner</label>
+                                            <div
+                                                class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                                <div class="space-y-1 text-center">
+                                                    <div class="flex text-sm text-gray-600">
+                                                        <label for="eventBanner"
+                                                            class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                                            <span>Upload a file</span>
+                                                            <input id="eventBanner" name="eventBanner" type="file"
+                                                                class="sr-only">
+                                                        </label>
+                                                        <p class="pl-1">or drag and drop</p>
+                                                    </div>
+                                                    <p class="text-xs text-gray-500">
+                                                        PNG, JPG up to 2MB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="submitEventBtn"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Create Event
+                    </button>
+                    <button type="button" id="cancelEventBtn"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div id="eventDetailsModal" class="modal fixed inset-0 overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <!-- Modal panel -->
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-indigo-600 px-4 py-3 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg leading-6 font-medium text-white" id="eventDetailTitle">
+                            Event Details
+                        </h3>
+                        <button id="closeDetailsModal" type="button"
+                            class="bg-indigo-600 rounded-md p-1 text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <span class="sr-only">Close</span>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white px-4 pt-4 pb-6">
+                    <img id="detailEventBanner"
+                        src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c43ead8e-119f-4ae0-a054-207134a2b960.png"
+                        alt="Event banner placeholder - will be replaced with the actual event image when details are loaded"
+                        class="w-full h-48 object-cover rounded-lg mb-4">
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h2 id="detailEventName" class="text-xl font-bold text-gray-900">Event Name</h2>
+                                <div class="mt-1 flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-map-marker-alt mr-1.5"></i>
+                                    <span id="detailEventLocation">Location</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-users mr-1.5"></i>
+                                <span id="detailEventCapacity">0</span> attendees
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center text-sm text-gray-500 mb-2">
+                                <i class="fas fa-calendar-day mr-1.5"></i>
+                                <span id="detailEventDate">Date</span>
+                                <span class="mx-2" id="detailEventTime">Time</span>
+                            </div>
+                            <span id="detailEventCategory"
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                Category
+                            </span>
+                        </div>
+
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-900">Description</h3>
+                            <p id="detailEventDescription" class="mt-2 text-sm text-gray-600">
+                                Event description will appear here.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="flex justify-between">
+                            <button id="rsvpBtn"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                RSVP Now
+                            </button>
+                            <div id="rsvpStatus"
+                                class="hidden inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-800 bg-green-100">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                RSVP Confirmed
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample event data
+        const events = [
+            {
+                id: 1,
+                title: "Tech Conference 2023",
+                date: "2023-12-15",
+                time: "09:00",
+                category: "business",
+                location: "Convention Center, Downtown",
+                description: "Join us for the biggest tech conference of the year featuring industry leaders and cutting-edge technology showcases.",
+                capacity: 250,
+                attendees: 184,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/6f415c2c-eea4-431e-82b8-4e58d0eeb2fe.png",
+                attending: false
+            },
+            {
+                id: 2,
+                title: "Local Music Festival",
+                date: "2023-11-25",
+                time: "14:00",
+                category: "music",
+                location: "Central Park Amphitheater",
+                description: "An afternoon of live music featuring local bands and artists across various genres.",
+                capacity: 500,
+                attendees: 327,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/968b0c16-2703-4121-a96d-45cf73cf3f8f.png",
+                attending: true
+            },
+            {
+                id: 3,
+                title: "Startup Networking Mixer",
+                date: "2023-12-05",
+                time: "18:30",
+                category: "business",
+                location: "Innovation Hub",
+                description: "Network with fellow entrepreneurs and investors at this exclusive networking event.",
+                capacity: 100,
+                attendees: 72,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/967704a8-97e5-427c-a456-445906643a39.png",
+                attending: false
+            },
+            {
+                id: 4,
+                title: "Yoga in the Park",
+                date: "2023-11-20",
+                time: "08:00",
+                category: "sports",
+                location: "Riverside Park",
+                description: "Start your day with a refreshing yoga session in the peaceful surroundings of Riverside Park.",
+                capacity: 50,
+                attendees: 35,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/2a1e1311-f918-423e-a184-84d277686f46.png",
+                attending: false
+            },
+            {
+                id: 5,
+                title: "Web Development Workshop",
+                date: "2023-12-10",
+                time: "10:00",
+                category: "education",
+                location: "Tech Institute",
+                description: "Learn modern web development techniques from experienced instructors in this hands-on workshop.",
+                capacity: 30,
+                attendees: 14,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9e2116ce-76d4-4240-bf88-8a5ebfb7cea9.png",
+                attending: false
+            },
+            {
+                id: 6,
+                title: "Culinary Arts Showcase",
+                date: "2023-11-30",
+                time: "19:00",
+                category: "social",
+                location: "Gourmet Center",
+                description: "Experience a culinary journey with top chefs showcasing their signature dishes and techniques.",
+                capacity: 80,
+                attendees: 62,
+                banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c9218baf-50a9-4726-ba2b-62f239f0db45.png",
+                attending: false
+            }
+        ];
+
+        // DOM elements
+        const eventsContainer = document.getElementById('eventsContainer');
+        const createEventBtn = document.getElementById('createEventBtn');
+        const createEventModal = document.getElementById('createEventModal');
+        const cancelEventBtn = document.getElementById('cancelEventBtn');
+        const submitEventBtn = document.getElementById('submitEventBtn');
+        const eventForm = document.getElementById('eventForm');
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const applyFilters = document.getElementById('applyFilters');
+        const eventDetailsModal = document.getElementById('eventDetailsModal');
+        const closeDetailsModal = document.getElementById('closeDetailsModal');
+        const rsvpBtn = document.getElementById('rsvpBtn');
+        const rsvpStatus = document.getElementById('rsvpStatus');
+
+        // Current selected event
+        let selectedEvent = null;
+
+        // Format date to readable string
+        function formatDate(dateString) {
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        // Format time to 12-hour format
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        }
+
+        // Render events to the page
+        function renderEvents(filteredEvents = events) {
+            eventsContainer.innerHTML = '';
+
+            if (filteredEvents.length === 0) {
+                eventsContainer.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <i class="fas fa-calendar-times text-gray-400 text-5xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900">No events found</h3>
+                        <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredEvents.forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = 'event-card bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg smooth-transition cursor-pointer';
+                eventElement.innerHTML = `
+                    <div class="relative">
+                        <img src="${event.banner}" alt="Event banner for ${event.title} at ${event.location} on ${formatDate(event.date)}" class="w-full h-48 object-cover">
+                        <div class="absolute bottom-2 left-2 bg-indigo-600 text-white text-xs font-medium px-2 py-1 rounded">
+                            ${event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 truncate">${event.title}</h3>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    ${event.location}
+                                </p>
+                            </div>
+                            ${event.attending ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Attending</span>` : ''}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <i class="fas fa-calendar-day mr-1"></i>
+                            <span>${formatDate(event.date)}</span>
+                            <span class="mx-1">•</span>
+                            <span>${formatTime(event.time)}</span>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center">
+                            <div class="flex-1 mr-2">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-indigo-600 h-2 rounded-full" style="width: ${(event.attendees / event.capacity) * 100}%"></div>
+                                </div>
+                                <span class="text-xs mt-1 text-gray-500">${event.attendees} of ${event.capacity} spots filled</span>
+                            </div>
+                            <button class="view-details-btn inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" data-id="${event.id}">
+                                Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+                eventsContainer.appendChild(eventElement);
+            });
+
+            // Add event listeners to all details buttons
+            document.querySelectorAll('.view-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const eventId = parseInt(btn.getAttribute('data-id'));
+                    viewEventDetails(eventId);
+                });
+            });
+
+            // Make whole card clickable
+            document.querySelectorAll('.event-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const eventId = parseInt(card.querySelector('.view-details-btn').getAttribute('data-id'));
+                    viewEventDetails(eventId);
+                });
+            });
+        }
+
+        // View event details in modal
+        function viewEventDetails(eventId) {
+            selectedEvent = events.find(event => event.id === eventId);
+            if (!selectedEvent) return;
+
+            document.getElementById('detailEventName').textContent = selectedEvent.title;
+            document.getElementById('detailEventLocation').textContent = selectedEvent.location;
+            document.getElementById('detailEventDate').textContent = formatDate(selectedEvent.date);
+            document.getElementById('detailEventTime').textContent = formatTime(selectedEvent.time);
+            document.getElementById('detailEventDescription').textContent = selectedEvent.description;
+            document.getElementById('detailEventCapacity').textContent = selectedEvent.attendees;
+            document.getElementById('detailEventBanner').src = selectedEvent.banner;
+            document.getElementById('detailEventBanner').alt = `Banner image for ${selectedEvent.title} event`;
+
+            // Update category badge
+            const categoryBadge = document.getElementById('detailEventCategory');
+            categoryBadge.textContent = selectedEvent.category.charAt(0).toUpperCase() + selectedEvent.category.slice(1);
+
+            // Update RSVP button/status
+            if (selectedEvent.attending) {
+                rsvpBtn.classList.add('hidden');
+                rsvpStatus.classList.remove('hidden');
+            } else {
+                rsvpBtn.classList.remove('hidden');
+                rsvpStatus.classList.add('hidden');
+            }
+
+            // Show modal
+            eventDetailsModal.classList.remove('hidden');
+        }
+
+        // Filter events based on search and category
+        function filterEvents() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const categoryValue = categoryFilter.value;
+
+            const filtered = events.filter(event => {
+                const matchesSearch = event.title.toLowerCase().includes(searchTerm) ||
+                    event.description.toLowerCase().includes(searchTerm) ||
+                    event.location.toLowerCase().includes(searchTerm);
+
+                const matchesCategory = categoryValue === 'all' || event.category === categoryValue;
+
+                return matchesSearch && matchesCategory;
+            });
+
+            renderEvents(filtered);
+        }
+
+        // Initialize the page
+        function init() {
+            renderEvents();
+
+            // Event listeners for create event modal
+            createEventBtn.addEventListener('click', () => {
+                createEventModal.classList.remove('hidden');
+            });
+
+            cancelEventBtn.addEventListener('click', () => {
+                createEventModal.classList.add('hidden');
+            });
+
+            // Close modals when clicking outside
+            [createEventModal, eventDetailsModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Submit new event form
+            submitEventBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(eventForm);
+                const newEvent = {
+                    id: events.length + 1,
+                    title: formData.get('eventTitle'),
+                    date: formData.get('eventDate'),
+                    time: formData.get('eventTime'),
+                    category: formData.get('eventCategory'),
+                    location: formData.get('eventLocation'),
+                    description: formData.get('eventDescription'),
+                    capacity: parseInt(formData.get('eventCapacity')),
+                    attendees: 0,
+                    attending: false,
+                    banner: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/30519a01-4c6e-4dc3-94e3-13139d77a61a.png"
+                };
+
+                events.unshift(newEvent);
+                renderEvents();
+                eventForm.reset();
+                createEventModal.classList.add('hidden');
+            });
+
+            // Event details modal close
+            closeDetailsModal.addEventListener('click', () => {
+                eventDetailsModal.classList.add('hidden');
+            });
+
+            // RSVP to event
+            rsvpBtn.addEventListener('click', () => {
+                if (selectedEvent) {
+                    if (selectedEvent.attendees < selectedEvent.capacity) {
+                        selectedEvent.attendees++;
+                        selectedEvent.attending = true;
+                        renderEvents();
+                        rsvpBtn.classList.add('hidden');
+                        rsvpStatus.classList.remove('hidden');
+                    } else {
+                        alert('This event has reached its capacity. Please check back later for cancellations.');
+                    }
+                }
+            });
+
+            // Filter events
+            applyFilters.addEventListener('click', filterEvents);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') filterEvents();
+            });
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
+
+
+
+
